@@ -39,7 +39,6 @@ window.onload = function () {
         stage.draw(context2D);
     }, 30); //每30毫秒刷新一次
     //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
-    var X = -500;
     var tf1 = new TextField();
     tf1.text = "Hello";
     tf1.x = 50;
@@ -50,9 +49,12 @@ window.onload = function () {
     image.src = "IMG_0515.JPG"; //指定图片
     var bitmap1 = new Bitmap();
     bitmap1.image = image;
+    var bitmap = new Bitmap();
+    bitmap.image = image;
+    bitmap.width = 300;
+    bitmap.height = 270;
     image.onload = function () {
-        bitmap1.image = image;
-        stage.addChild(bitmap1);
+        stage.addChild(bitmap);
         stage.addChild(tf1);
         stage.addChild(tf2);
     };
@@ -82,7 +84,7 @@ var Bitmap = (function (_super) {
         _super.apply(this, arguments);
     }
     Bitmap.prototype.draw = function (context2D) {
-        context2D.drawImage(this.image, this.x, 0);
+        context2D.drawImage(this.image, this.x, 0, this.width, this.height);
     };
     return Bitmap;
 }(DisplayObject));
