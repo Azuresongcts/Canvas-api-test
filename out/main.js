@@ -32,77 +32,73 @@ window.onload = function () {
 
 */
     //处理图片
+    //context2D.drawImage(image, 0, 0);//未加载完成，无法显示图片
+    var stage = new DisplayObjectContainer();
+    setInterval(function () {
+        context2D.clearRect(0, 0, canvas.width, canvas.height); //在显示图片之前先清屏，将之前帧的图片去掉,清屏范围最好设置成画布的宽与高
+        stage.draw(context2D);
+    }, 30); //每30毫秒刷新一次
+    //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
+    var X = -500;
+    var tf1 = new TextField();
+    tf1.text = "Hello";
+    tf1.x = 50;
+    var tf2 = new TextField();
+    tf2.text = "World";
+    tf2.x = 100;
     var image = document.createElement("img"); //创建空壳
-    image.src = "38330591_p0.png"; //指定图片
-    context2D.drawImage(image, 0, 0); //未加载完成，无法显示图片
+    image.src = "IMG_0515.JPG"; //指定图片
+    var bitmap1 = new Bitmap();
+    bitmap1.image = image;
     image.onload = function () {
-        var X = -500;
-        var tf1 = new TextField();
-        tf1.text = "Hello";
-        tf1.x = 0;
-        var tf2 = new TextField();
-        tf2.text = "World";
-        tf2.x = 100;
-        var bitmap1 = new Bitmap();
-        bitmap1.image = image;
-        var stage = new DisplayObjectContainer();
-        var array = [];
         bitmap1.image = image;
         stage.addChild(bitmap1);
         stage.addChild(tf1);
         stage.addChild(tf2);
-        setInterval(function () {
-            context2D.clearRect(0, 0, canvas.width, canvas.height); //在显示图片之前先清屏，将之前帧的图片去掉,清屏范围最好设置成画布的宽与高
-            for (var _i = 0, array_1 = array; _i < array_1.length; _i++) {
-                var drawable = array_1[_i];
-                drawable.draw(context2D);
-            }
-        }, 30); //每30毫秒刷新一次
-        //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
     };
-    var DisplayObject = (function () {
-        function DisplayObject() {
-            this.x = 0;
-        }
-        DisplayObject.prototype.draw = function (context2D) {
-        };
-        return DisplayObject;
-    }());
-    var TextField = (function (_super) {
-        __extends(TextField, _super);
-        function TextField() {
-            _super.apply(this, arguments);
-            this.text = "";
-        }
-        TextField.prototype.draw = function (context2D) {
-            context2D.fillText(this.text, this.x, 0);
-        };
-        return TextField;
-    }(DisplayObject));
-    var Bitmap = (function (_super) {
-        __extends(Bitmap, _super);
-        function Bitmap() {
-            _super.apply(this, arguments);
-        }
-        Bitmap.prototype.draw = function (context2D) {
-            context2D.drawImage(this.image, this.x, 0);
-        };
-        return Bitmap;
-    }(DisplayObject));
-    var DisplayObjectContainer = (function () {
-        function DisplayObjectContainer() {
-            this.array = [];
-        }
-        DisplayObjectContainer.prototype.addChild = function (DisplayObject) {
-            this.array.push(DisplayObject);
-        };
-        DisplayObjectContainer.prototype.draw = function (context2D) {
-            for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
-                var drawable = _a[_i];
-                drawable.draw(context2D);
-            }
-        };
-        return DisplayObjectContainer;
-    }());
 };
+var DisplayObject = (function () {
+    function DisplayObject() {
+        this.x = 0;
+    }
+    DisplayObject.prototype.draw = function (context2D) {
+    };
+    return DisplayObject;
+}());
+var TextField = (function (_super) {
+    __extends(TextField, _super);
+    function TextField() {
+        _super.apply(this, arguments);
+        this.text = "";
+    }
+    TextField.prototype.draw = function (context2D) {
+        context2D.fillText(this.text, this.x, 0);
+    };
+    return TextField;
+}(DisplayObject));
+var Bitmap = (function (_super) {
+    __extends(Bitmap, _super);
+    function Bitmap() {
+        _super.apply(this, arguments);
+    }
+    Bitmap.prototype.draw = function (context2D) {
+        context2D.drawImage(this.image, this.x, 0);
+    };
+    return Bitmap;
+}(DisplayObject));
+var DisplayObjectContainer = (function () {
+    function DisplayObjectContainer() {
+        this.array = [];
+    }
+    DisplayObjectContainer.prototype.addChild = function (displayObject) {
+        this.array.push(displayObject);
+    };
+    DisplayObjectContainer.prototype.draw = function (context2D) {
+        for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
+            var drawable = _a[_i];
+            drawable.draw(context2D);
+        }
+    };
+    return DisplayObjectContainer;
+}());
 //# sourceMappingURL=main.js.map
