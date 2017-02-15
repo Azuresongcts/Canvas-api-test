@@ -39,11 +39,15 @@ window.onload = () => {
     }, 30)//每30毫秒刷新一次
     //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
     var tf1 = new TextField();
-    tf1.text = "Hello";
+    tf1.text = "This is";
     tf1.x = 50;
+    tf1.y = 70;
+    tf1.size = 30;
     var tf2 = new TextField();
-    tf2.text = "World";
-    tf2.x = 100;
+    tf2.text = "CTS";
+    tf2.x = 150;
+    tf2.y = 70;
+    tf2.size = 35;
 
     var image = document.createElement("img");//创建空壳
     image.src = "IMG_0515.JPG";//指定图片
@@ -54,6 +58,7 @@ window.onload = () => {
     bitmap.image = image;
     bitmap.width = 300;
     bitmap.height = 270;
+    bitmap.y=80;
 
     image.onload = () => {//加载图片、文字与封装API等
         stage.addChild(bitmap);
@@ -68,6 +73,7 @@ window.onload = () => {
 class DisplayObject implements Drawable {
 
     x: number = 0;
+    y: number = 0;
 
     draw(context2D: CanvasRenderingContext2D) {
     }
@@ -76,9 +82,12 @@ class DisplayObject implements Drawable {
 class TextField extends DisplayObject {
 
     text: string = "";
+    size: number = 30;
+    font: string = "Arial";
 
     draw(context2D: CanvasRenderingContext2D) {
-        context2D.fillText(this.text, this.x, 0);
+        context2D.font = this.size + "px" + " " + this.font;
+        context2D.fillText(this.text, this.x, this.y);
     }
 }
 
@@ -90,7 +99,7 @@ class Bitmap extends DisplayObject {
 
 
     draw(context2D: CanvasRenderingContext2D) {
-        context2D.drawImage(this.image, this.x, 0, this.width, this.height);
+        context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
 }
 
