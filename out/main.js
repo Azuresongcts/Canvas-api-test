@@ -16,6 +16,7 @@ window.onload = function () {
     context2D.strokeStyle = "#00FF00";
 
     context2D.moveTo(10, 10);
+    
 
     context2D.lineTo(150, 50);
     context2D.lineTo(10, 50);
