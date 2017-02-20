@@ -41,30 +41,34 @@ window.onload = () => {
     //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
     var tf1 = new TextField();
     tf1.text = "This is";
-    tf1.x = 50;
-    tf1.y = 70;
-    tf1.size = 30;
+    tf1.x = 80;
+    tf1.y = 20;
+    tf1.size = 20;
     var tf2 = new TextField();
     tf2.text = "CTS";
-    tf2.x = 150;
-    tf2.y = 70;
-    tf2.size = 35;
+    tf2.x = 130;
+    tf2.y = 20;
+    tf2.size = 20;
+
 
     var image = document.createElement("img");//创建空壳
     image.src = "IMG_0515.JPG";//指定图片
-    let bitmap1 = new Bitmap();
-    bitmap1.image = image;
 
     var bitmap = new Bitmap();
     bitmap.image = image;
     bitmap.width = 300;
     bitmap.height = 270;
-    bitmap.y = 80;
+    bitmap.y = 40;
+    bitmap.x=50;
+    bitmap.alpha = 0.4;
+
 
     image.onload = () => {//加载图片、文字与封装API等
-        stage.addChild(bitmap);
+        
         stage.addChild(tf1);
         stage.addChild(tf2);
+        stage.addChild(bitmap);
+        //stage.removeChild(bitmap);
     }
 
 
@@ -73,17 +77,17 @@ window.onload = () => {
 };
 class DisplayObject implements Drawable {
 
+    matrix: math.Matrix = null;
+    globalMatrix: math.Matrix = null;
+
     x: number = 0;
     y: number = 0;
     scaleX: number = 1;
     scaleY: number = 1;
     rotation: number = 0;
 
-    matrix: math.Matrix = null;
-    globalMatrix: math.Matrix = null;
-
-    alpha: number = 1;//相对alpha
-    globalAlpha: number = 1;//全局alpha                             
+    alpha: number = 1;//默认相对alpha
+    globalAlpha: number = 1;//默认全局alpha                             
     parent: DisplayObject = null;
 
     constructor() {
@@ -98,7 +102,7 @@ class DisplayObject implements Drawable {
 
         this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);//初始化矩阵
 
-        //计算相对Alpha值
+        //计算全局Alpha值
         if (this.parent) {
 
             this.globalAlpha = this.parent.globalAlpha * this.alpha;
@@ -108,6 +112,7 @@ class DisplayObject implements Drawable {
 
             this.globalAlpha = this.alpha;
             this.globalMatrix = this.matrix;
+
         }
 
         context2D.globalAlpha = this.globalAlpha;
@@ -119,14 +124,13 @@ class DisplayObject implements Drawable {
         3.把现实对象的相对矩阵与父对象的全局矩阵相乘，得到显示对象的全局矩阵
         4.对渲染上下文设置显示对象的全局矩阵
         5.根容器的相对矩阵就是全局矩阵
-        */	
+        */
 
         context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
         this.render(context2D);
 
     }
 
-    //在子类中重写
     render(context2D: CanvasRenderingContext2D) {
 
 
@@ -136,12 +140,14 @@ class DisplayObject implements Drawable {
 class TextField extends DisplayObject {
 
     text: string = "";
-    size: number = 30;
+    size: number = 15;
     font: string = "Arial";
+    color : string = "";
 
-    draw(context2D: CanvasRenderingContext2D) {
+    render(context2D: CanvasRenderingContext2D) {
         context2D.font = this.size + "px" + " " + this.font;
         context2D.fillText(this.text, this.x, this.y);
+        context2D.fillStyle = this.color;
     }
 }
 
@@ -152,12 +158,12 @@ class Bitmap extends DisplayObject {
     height: number;
 
 
-    draw(context2D: CanvasRenderingContext2D) {
+    render(context2D: CanvasRenderingContext2D) {
         context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
 }
 
-class DisplayObjectContainer implements Drawable {
+class DisplayObjectContainer extends DisplayObject {
 
     array: Drawable[] = [];
 
@@ -168,6 +174,18 @@ class DisplayObjectContainer implements Drawable {
     draw(context2D: CanvasRenderingContext2D) {
         for (let drawable of this.array) {
             drawable.draw(context2D);
+        }
+    }
+
+    removeChild(displayObject: DisplayObject) {
+
+        for (var i = 0; i < this.array.length; i++) {
+
+            if (displayObject == this.array[i]) {
+
+                this.array.splice(i);
+                return;
+            }
         }
     }
 

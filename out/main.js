@@ -42,47 +42,48 @@ window.onload = function () {
     //局部渲染：仅渲染整个场景中改变的一部分，但是需要更大的内存空间来计算
     var tf1 = new TextField();
     tf1.text = "This is";
-    tf1.x = 50;
-    tf1.y = 70;
-    tf1.size = 30;
+    tf1.x = 80;
+    tf1.y = 20;
+    tf1.size = 20;
     var tf2 = new TextField();
     tf2.text = "CTS";
-    tf2.x = 150;
-    tf2.y = 70;
-    tf2.size = 35;
+    tf2.x = 130;
+    tf2.y = 20;
+    tf2.size = 20;
     var image = document.createElement("img"); //创建空壳
     image.src = "IMG_0515.JPG"; //指定图片
-    var bitmap1 = new Bitmap();
-    bitmap1.image = image;
     var bitmap = new Bitmap();
     bitmap.image = image;
     bitmap.width = 300;
     bitmap.height = 270;
-    bitmap.y = 80;
+    bitmap.y = 40;
+    bitmap.x = 50;
+    bitmap.alpha = 0.4;
     image.onload = function () {
-        stage.addChild(bitmap);
         stage.addChild(tf1);
         stage.addChild(tf2);
+        stage.addChild(bitmap);
+        //stage.removeChild(bitmap);
     };
 };
 var DisplayObject = (function () {
     function DisplayObject() {
+        this.matrix = null;
+        this.globalMatrix = null;
         this.x = 0;
         this.y = 0;
         this.scaleX = 1;
         this.scaleY = 1;
         this.rotation = 0;
-        this.matrix = null;
-        this.globalMatrix = null;
-        this.alpha = 1; //相对alpha
-        this.globalAlpha = 1; //全局alpha                             
+        this.alpha = 1; //默认相对alpha
+        this.globalAlpha = 1; //默认全局alpha                             
         this.parent = null;
         this.matrix = new math.Matrix();
         this.globalMatrix = new math.Matrix();
     }
     DisplayObject.prototype.draw = function (context2D) {
         this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation); //初始化矩阵
-        //计算相对Alpha值
+        //计算全局Alpha值
         if (this.parent) {
             this.globalAlpha = this.parent.globalAlpha * this.alpha;
             this.globalMatrix = math.matrixAppendMatrix(this.matrix, this.parent.globalMatrix);
@@ -103,7 +104,6 @@ var DisplayObject = (function () {
         context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
         this.render(context2D);
     };
-    //在子类中重写
     DisplayObject.prototype.render = function (context2D) {
     };
     return DisplayObject;
@@ -113,12 +113,14 @@ var TextField = (function (_super) {
     function TextField() {
         _super.apply(this, arguments);
         this.text = "";
-        this.size = 30;
+        this.size = 15;
         this.font = "Arial";
+        this.color = "";
     }
-    TextField.prototype.draw = function (context2D) {
+    TextField.prototype.render = function (context2D) {
         context2D.font = this.size + "px" + " " + this.font;
         context2D.fillText(this.text, this.x, this.y);
+        context2D.fillStyle = this.color;
     };
     return TextField;
 }(DisplayObject));
@@ -127,13 +129,15 @@ var Bitmap = (function (_super) {
     function Bitmap() {
         _super.apply(this, arguments);
     }
-    Bitmap.prototype.draw = function (context2D) {
+    Bitmap.prototype.render = function (context2D) {
         context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
     };
     return Bitmap;
 }(DisplayObject));
-var DisplayObjectContainer = (function () {
+var DisplayObjectContainer = (function (_super) {
+    __extends(DisplayObjectContainer, _super);
     function DisplayObjectContainer() {
+        _super.apply(this, arguments);
         this.array = [];
     }
     DisplayObjectContainer.prototype.addChild = function (displayObject) {
@@ -145,8 +149,16 @@ var DisplayObjectContainer = (function () {
             drawable.draw(context2D);
         }
     };
+    DisplayObjectContainer.prototype.removeChild = function (displayObject) {
+        for (var i = 0; i < this.array.length; i++) {
+            if (displayObject == this.array[i]) {
+                this.array.splice(i);
+                return;
+            }
+        }
+    };
     return DisplayObjectContainer;
-}());
+}(DisplayObject));
 var math;
 (function (math) {
     var Point = (function () {
