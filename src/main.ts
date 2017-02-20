@@ -59,16 +59,16 @@ window.onload = () => {
     bitmap.width = 300;
     bitmap.height = 270;
     bitmap.y = 40;
-    bitmap.x=50;
+    bitmap.x = 50;
     bitmap.alpha = 0.4;
 
 
     image.onload = () => {//加载图片、文字与封装API等
-        
+
         stage.addChild(tf1);
         stage.addChild(tf2);
         stage.addChild(bitmap);
-        //stage.removeChild(bitmap);
+        //stage.removeChild(tf1);
     }
 
 
@@ -89,6 +89,7 @@ class DisplayObject implements Drawable {
     alpha: number = 1;//默认相对alpha
     globalAlpha: number = 1;//默认全局alpha                             
     parent: DisplayObject = null;
+    remove(){};
 
     constructor() {
 
@@ -135,6 +136,7 @@ class DisplayObject implements Drawable {
 
 
     }
+
 }
 
 class TextField extends DisplayObject {
@@ -142,7 +144,7 @@ class TextField extends DisplayObject {
     text: string = "";
     size: number = 15;
     font: string = "Arial";
-    color : string = "";
+    color: string = "";
 
     render(context2D: CanvasRenderingContext2D) {
         context2D.font = this.size + "px" + " " + this.font;
@@ -168,7 +170,11 @@ class DisplayObjectContainer extends DisplayObject {
     array: Drawable[] = [];
 
     addChild(displayObject: DisplayObject) {
+
+        this.removeChild(displayObject);
         this.array.push(displayObject);
+        displayObject.parent = this;
+
     }
 
     draw(context2D: CanvasRenderingContext2D) {
@@ -177,14 +183,16 @@ class DisplayObjectContainer extends DisplayObject {
         }
     }
 
-    removeChild(displayObject: DisplayObject) {
-
-        for (var i = 0; i < this.array.length; i++) {
-
-            if (displayObject == this.array[i]) {
-
-                this.array.splice(i);
-                return;
+    removeChild(child:Drawable) {
+        //By 杨帆 ， 先复制出临时数组，遍历数组中子元素，找到与需要删除的名称相同的子元素并删除。
+        var tempArrlist=this.array.concat();
+        for (let each of tempArrlist){
+            if(each==child){
+                var index=this.array.indexOf(child);
+                tempArrlist.splice(index,1);
+                this.array=tempArrlist;
+                child.remove();
+                break;
             }
         }
     }
@@ -193,6 +201,7 @@ class DisplayObjectContainer extends DisplayObject {
 
 interface Drawable {
     draw(context2D: CanvasRenderingContext2D);
+    remove();
 }
 
 module math {

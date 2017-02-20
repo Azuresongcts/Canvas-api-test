@@ -63,7 +63,7 @@ window.onload = function () {
         stage.addChild(tf1);
         stage.addChild(tf2);
         stage.addChild(bitmap);
-        //stage.removeChild(bitmap);
+        //stage.removeChild(tf1);
     };
 };
 var DisplayObject = (function () {
@@ -81,6 +81,8 @@ var DisplayObject = (function () {
         this.matrix = new math.Matrix();
         this.globalMatrix = new math.Matrix();
     }
+    DisplayObject.prototype.remove = function () { };
+    ;
     DisplayObject.prototype.draw = function (context2D) {
         this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation); //初始化矩阵
         //计算全局Alpha值
@@ -141,7 +143,9 @@ var DisplayObjectContainer = (function (_super) {
         this.array = [];
     }
     DisplayObjectContainer.prototype.addChild = function (displayObject) {
+        this.removeChild(displayObject);
         this.array.push(displayObject);
+        displayObject.parent = this;
     };
     DisplayObjectContainer.prototype.draw = function (context2D) {
         for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
@@ -149,11 +153,17 @@ var DisplayObjectContainer = (function (_super) {
             drawable.draw(context2D);
         }
     };
-    DisplayObjectContainer.prototype.removeChild = function (displayObject) {
-        for (var i = 0; i < this.array.length; i++) {
-            if (displayObject == this.array[i]) {
-                this.array.splice(i);
-                return;
+    DisplayObjectContainer.prototype.removeChild = function (child) {
+        //By 杨帆 ， 先复制出临时数组，遍历数组中子元素，找到与需要删除的名称相同的子元素并删除。
+        var tempArrlist = this.array.concat();
+        for (var _i = 0, tempArrlist_1 = tempArrlist; _i < tempArrlist_1.length; _i++) {
+            var each = tempArrlist_1[_i];
+            if (each == child) {
+                var index = this.array.indexOf(child);
+                tempArrlist.splice(index, 1);
+                this.array = tempArrlist;
+                child.remove();
+                break;
             }
         }
     };
