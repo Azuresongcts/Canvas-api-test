@@ -1,7 +1,27 @@
 window.onload = () => {
     var canvas = document.getElementById("app") as HTMLCanvasElement;
     var context2D = canvas.getContext("2d");
+    canvas.onmousedown = (e) => {//down为鼠标按下，click为点击
+        let x = e.offsetX;
+        let y = e.offsetY;
+        let target = stage.hitTest(x, y);
+        let result = target;
 
+        //list
+        //  |-itemRenderer
+        //      |--TextField    点TextField可以拖动，点button弹出Alert不能拖动
+        //      |--Button
+        if (result) {
+            alert("1");
+            while (result.parent) {
+                let type = "mousedown";//mouseup mousemove mousemove
+                let currentTarget = result.parent;
+                let e = { type, target, currentTarget }
+                result = result.parent;
+
+            }
+        }
+    }
     /*context2D.setTransform(1, 0, 0, 1, 50, 50);//设置坐标，1,0,0,1表示矩阵 
     //1   0   50
     //0   1   50
@@ -56,11 +76,13 @@ window.onload = () => {
 
     var bitmap = new Bitmap();
     bitmap.image = image;
-    bitmap.width = 300;
-    bitmap.height = 270;
     bitmap.y = 40;
     bitmap.x = 50;
-    bitmap.alpha = 0.4;
+    bitmap.scaleX=0.5;
+    bitmap.scaleY=0.5;
+
+
+
 
 
     image.onload = () => {//加载图片、文字与封装API等
@@ -73,9 +95,17 @@ window.onload = () => {
 
 
 
-
 };
-class DisplayObject implements Drawable {
+
+//scene
+//  |-- people(0,100)/ lovalMatrix-wander =>(50,-50)
+//      |--glasses(0,100)/localMatrix =>(50,-150)
+//      |--clothes
+//捕获/冒泡机制
+//冒泡：当用户点击到一个物体后，被点击的物体通知其所有父级。例如用户点击眼镜，眼镜通知人。
+//捕获：由上至下，为了执行一些高级逻辑。先执行捕获阶段的侦听器，再执行冒泡阶段。
+
+abstract class DisplayObject implements Drawable {
 
     matrix: math.Matrix = null;
     globalMatrix: math.Matrix = null;
@@ -88,8 +118,10 @@ class DisplayObject implements Drawable {
 
     alpha: number = 1;//默认相对alpha
     globalAlpha: number = 1;//默认全局alpha                             
-    parent: DisplayObject = null;
-    remove(){};
+    parent: DisplayObjectContainer = null;
+    remove() { };
+
+    touchEnabled: boolean;
 
     constructor() {
 
@@ -97,6 +129,7 @@ class DisplayObject implements Drawable {
         this.globalMatrix = new math.Matrix();
 
     }
+    //点击判断函数，返回值代表是否被点击。
 
     draw(context2D: CanvasRenderingContext2D) {
 
@@ -132,10 +165,9 @@ class DisplayObject implements Drawable {
 
     }
 
-    render(context2D: CanvasRenderingContext2D) {
+    abstract render(context2D: CanvasRenderingContext2D);
 
-
-    }
+    abstract hitTest(x: number, y: number): DisplayObject;
 
 }
 
@@ -151,23 +183,47 @@ class TextField extends DisplayObject {
         context2D.fillText(this.text, this.x, this.y);
         context2D.fillStyle = this.color;
     }
+    hitTest(x: number, y: number) {
+        var rect = new math.Rectangle();
+        rect.width = 10 * this.text.length;
+        rect.height = 20;
+        var point = new math.Point(x, y);
+        if (rect.isPointInRectangle(point)) {
+            return this;
+        } else {
+            return null;
+        }
+
+    }
 }
 
 class Bitmap extends DisplayObject {
 
     image: HTMLImageElement;
-    width: number;
-    height: number;
+
 
 
     render(context2D: CanvasRenderingContext2D) {
-        context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
+        context2D.drawImage(this.image, this.x, this.y, this.image.width, this.image.height);
+    }
+    hitTest(x: number, y: number) {
+        let rect = new math.Rectangle();
+        rect.x = 0;
+        rect.y = 0;
+        rect.width = this.image.width;
+        rect.height = this.image.height;
+        if (rect.isPointInRectangle(new math.Point(x, y))) {
+            return this;
+        } else {
+            return null;
+        }
     }
 }
 
 class DisplayObjectContainer extends DisplayObject {
 
     array: Drawable[] = [];
+    children: DisplayObject[] = [];
 
     addChild(displayObject: DisplayObject) {
 
@@ -177,25 +233,38 @@ class DisplayObjectContainer extends DisplayObject {
 
     }
 
-    draw(context2D: CanvasRenderingContext2D) {
+    render(context2D: CanvasRenderingContext2D) {
         for (let drawable of this.array) {
             drawable.draw(context2D);
         }
     }
 
-    removeChild(child:Drawable) {
+    removeChild(child: Drawable) {
         //By 杨帆 ， 先复制出临时数组，遍历数组中子元素，找到与需要删除的名称相同的子元素并删除。
-        var tempArrlist=this.array.concat();
-        for (let each of tempArrlist){
-            if(each==child){
-                var index=this.array.indexOf(child);
-                tempArrlist.splice(index,1);
-                this.array=tempArrlist;
+        var tempArrlist = this.array.concat();
+        for (let each of tempArrlist) {
+            if (each == child) {
+                var index = this.array.indexOf(child);
+                tempArrlist.splice(index, 1);
+                this.array = tempArrlist;
                 child.remove();
                 break;
             }
         }
     }
+    hitTest(x:number, y:number) {
+        for (let i = this.children.length - 1; i >= 0; i--) {
+            let child = this.children[i];
+            let pointBaseOnChild = math.pointAppendMatrix(new math.Point(x, y), math.invertMatrix(child.matrix));
+            let hitTestResult = child.hitTest(pointBaseOnChild.x, pointBaseOnChild.y);//遍历
+            if (hitTestResult) {
+                return hitTestResult;
+            }
+        }
+
+        return null;
+    }
+
 
 }
 
@@ -215,7 +284,21 @@ module math {
             this.y = y;
         }
     }
+    export class Rectangle {
+        x = 0;
+        y = 0;
+        width = 1;
+        height = 1;
 
+        isPointInRectangle(point: Point) {
+            let rect = this;
+            if (point.x < rect.width + rect.x && point.y < rect.height + rect.y && point.x > rect.x && point.y > rect.y) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
     export function pointAppendMatrix(point: Point, m: Matrix): Point {
         var x = m.a * point.x + m.c * point.y + m.tx;
         var y = m.b * point.x + m.d * point.y + m.ty;

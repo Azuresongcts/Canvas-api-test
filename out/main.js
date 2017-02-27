@@ -6,6 +6,25 @@ var __extends = (this && this.__extends) || function (d, b) {
 window.onload = function () {
     var canvas = document.getElementById("app");
     var context2D = canvas.getContext("2d");
+    canvas.onmousedown = function (e) {
+        var x = e.offsetX;
+        var y = e.offsetY;
+        var target = stage.hitTest(x, y);
+        var result = target;
+        //list
+        //  |-itemRenderer
+        //      |--TextField    点TextField可以拖动，点button弹出Alert不能拖动
+        //      |--Button
+        if (result) {
+            alert("1");
+            while (result.parent) {
+                var type = "mousedown"; //mouseup mousemove mousemove
+                var currentTarget = result.parent;
+                var e_1 = { type: type, target: target, currentTarget: currentTarget };
+                result = result.parent;
+            }
+        }
+    };
     /*context2D.setTransform(1, 0, 0, 1, 50, 50);//设置坐标，1,0,0,1表示矩阵
     //1   0   50
     //0   1   50
@@ -54,11 +73,10 @@ window.onload = function () {
     image.src = "IMG_0515.JPG"; //指定图片
     var bitmap = new Bitmap();
     bitmap.image = image;
-    bitmap.width = 300;
-    bitmap.height = 270;
     bitmap.y = 40;
     bitmap.x = 50;
-    bitmap.alpha = 0.4;
+    bitmap.scaleX = 0.5;
+    bitmap.scaleY = 0.5;
     image.onload = function () {
         stage.addChild(tf1);
         stage.addChild(tf2);
@@ -66,6 +84,13 @@ window.onload = function () {
         //stage.removeChild(tf1);
     };
 };
+//scene
+//  |-- people(0,100)/ lovalMatrix-wander =>(50,-50)
+//      |--glasses(0,100)/localMatrix =>(50,-150)
+//      |--clothes
+//捕获/冒泡机制
+//冒泡：当用户点击到一个物体后，被点击的物体通知其所有父级。例如用户点击眼镜，眼镜通知人。
+//捕获：由上至下，为了执行一些高级逻辑。先执行捕获阶段的侦听器，再执行冒泡阶段。
 var DisplayObject = (function () {
     function DisplayObject() {
         this.matrix = null;
@@ -83,6 +108,7 @@ var DisplayObject = (function () {
     }
     DisplayObject.prototype.remove = function () { };
     ;
+    //点击判断函数，返回值代表是否被点击。
     DisplayObject.prototype.draw = function (context2D) {
         this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation); //初始化矩阵
         //计算全局Alpha值
@@ -106,8 +132,6 @@ var DisplayObject = (function () {
         context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
         this.render(context2D);
     };
-    DisplayObject.prototype.render = function (context2D) {
-    };
     return DisplayObject;
 }());
 var TextField = (function (_super) {
@@ -124,6 +148,18 @@ var TextField = (function (_super) {
         context2D.fillText(this.text, this.x, this.y);
         context2D.fillStyle = this.color;
     };
+    TextField.prototype.hitTest = function (x, y) {
+        var rect = new math.Rectangle();
+        rect.width = 10 * this.text.length;
+        rect.height = 20;
+        var point = new math.Point(x, y);
+        if (rect.isPointInRectangle(point)) {
+            return this;
+        }
+        else {
+            return null;
+        }
+    };
     return TextField;
 }(DisplayObject));
 var Bitmap = (function (_super) {
@@ -132,7 +168,20 @@ var Bitmap = (function (_super) {
         _super.apply(this, arguments);
     }
     Bitmap.prototype.render = function (context2D) {
-        context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
+        context2D.drawImage(this.image, this.x, this.y, this.image.width, this.image.height);
+    };
+    Bitmap.prototype.hitTest = function (x, y) {
+        var rect = new math.Rectangle();
+        rect.x = 0;
+        rect.y = 0;
+        rect.width = this.image.width;
+        rect.height = this.image.height;
+        if (rect.isPointInRectangle(new math.Point(x, y))) {
+            return this;
+        }
+        else {
+            return null;
+        }
     };
     return Bitmap;
 }(DisplayObject));
@@ -141,13 +190,14 @@ var DisplayObjectContainer = (function (_super) {
     function DisplayObjectContainer() {
         _super.apply(this, arguments);
         this.array = [];
+        this.children = [];
     }
     DisplayObjectContainer.prototype.addChild = function (displayObject) {
         this.removeChild(displayObject);
         this.array.push(displayObject);
         displayObject.parent = this;
     };
-    DisplayObjectContainer.prototype.draw = function (context2D) {
+    DisplayObjectContainer.prototype.render = function (context2D) {
         for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
             var drawable = _a[_i];
             drawable.draw(context2D);
@@ -167,6 +217,17 @@ var DisplayObjectContainer = (function (_super) {
             }
         }
     };
+    DisplayObjectContainer.prototype.hitTest = function (x, y) {
+        for (var i = this.children.length - 1; i >= 0; i--) {
+            var child = this.children[i];
+            var pointBaseOnChild = math.pointAppendMatrix(new math.Point(x, y), math.invertMatrix(child.matrix));
+            var hitTestResult = child.hitTest(pointBaseOnChild.x, pointBaseOnChild.y); //遍历
+            if (hitTestResult) {
+                return hitTestResult;
+            }
+        }
+        return null;
+    };
     return DisplayObjectContainer;
 }(DisplayObject));
 var math;
@@ -179,6 +240,25 @@ var math;
         return Point;
     }());
     math.Point = Point;
+    var Rectangle = (function () {
+        function Rectangle() {
+            this.x = 0;
+            this.y = 0;
+            this.width = 1;
+            this.height = 1;
+        }
+        Rectangle.prototype.isPointInRectangle = function (point) {
+            var rect = this;
+            if (point.x < rect.width + rect.x && point.y < rect.height + rect.y && point.x > rect.x && point.y > rect.y) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        };
+        return Rectangle;
+    }());
+    math.Rectangle = Rectangle;
     function pointAppendMatrix(point, m) {
         var x = m.a * point.x + m.c * point.y + m.tx;
         var y = m.b * point.x + m.d * point.y + m.ty;
