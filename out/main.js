@@ -6,25 +6,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 window.onload = function () {
     var canvas = document.getElementById("app");
     var context2D = canvas.getContext("2d");
-    canvas.onmousedown = function (e) {
-        var x = e.offsetX;
-        var y = e.offsetY;
-        var target = stage.hitTest(x, y);
-        var result = target;
-        //list
-        //  |-itemRenderer
-        //      |--TextField    点TextField可以拖动，点button弹出Alert不能拖动
-        //      |--Button
-        if (result) {
-            alert("1");
-            while (result.parent) {
-                var type = "mousedown"; //mouseup mousemove mousemove
-                var currentTarget = result.parent;
-                var e_1 = { type: type, target: target, currentTarget: currentTarget };
-                result = result.parent;
-            }
-        }
-    };
+    var stage = new DisplayObjectContainer();
     /*context2D.setTransform(1, 0, 0, 1, 50, 50);//设置坐标，1,0,0,1表示矩阵
     //1   0   50
     //0   1   50
@@ -53,7 +35,6 @@ window.onload = function () {
 */
     //处理图片
     //context2D.drawImage(image, 0, 0);//未加载完成，无法显示图片
-    var stage = new DisplayObjectContainer();
     setInterval(function () {
         context2D.clearRect(0, 0, canvas.width, canvas.height); //在显示图片之前先清屏，将之前帧的图片去掉,清屏范围最好设置成画布的宽与高
         stage.draw(context2D);
@@ -79,9 +60,29 @@ window.onload = function () {
     bitmap.scaleY = 0.5;
     image.onload = function () {
         stage.addChild(tf1);
+        //console.log("1");
         stage.addChild(tf2);
         stage.addChild(bitmap);
         //stage.removeChild(tf1);
+    };
+    canvas.onmousedown = function (e) {
+        var x = e.offsetX;
+        var y = e.offsetY;
+        var target = stage.hitTest(x, y);
+        var result = target;
+        //list
+        //  |-itemRenderer
+        //      |--TextField    点TextField可以拖动，点button弹出Alert不能拖动
+        //      |--Button
+        if (result) {
+            //alert("1");
+            while (result.parent) {
+                var type = "mousedown"; //mouseup mousemove mousemove
+                var currentTarget = result.parent;
+                var e_1 = { type: type, target: target, currentTarget: currentTarget };
+                result = result.parent;
+            }
+        }
     };
 };
 //scene
@@ -165,7 +166,7 @@ var TextField = (function (_super) {
 var Bitmap = (function (_super) {
     __extends(Bitmap, _super);
     function Bitmap() {
-        _super.apply(this, arguments);
+        _super.call(this);
     }
     Bitmap.prototype.render = function (context2D) {
         context2D.drawImage(this.image, this.x, this.y, this.image.width, this.image.height);
@@ -176,6 +177,7 @@ var Bitmap = (function (_super) {
         rect.y = 0;
         rect.width = this.image.width;
         rect.height = this.image.height;
+        //alert("22");
         if (rect.isPointInRectangle(new math.Point(x, y))) {
             return this;
         }
@@ -189,31 +191,27 @@ var DisplayObjectContainer = (function (_super) {
     __extends(DisplayObjectContainer, _super);
     function DisplayObjectContainer() {
         _super.apply(this, arguments);
-        this.array = [];
         this.children = [];
     }
-    DisplayObjectContainer.prototype.addChild = function (displayObject) {
-        this.removeChild(displayObject);
-        this.array.push(displayObject);
-        displayObject.parent = this;
+    DisplayObjectContainer.prototype.addChild = function (child) {
+        this.children.push(child);
+        child.parent = this;
     };
     DisplayObjectContainer.prototype.render = function (context2D) {
-        for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
-            var drawable = _a[_i];
-            drawable.draw(context2D);
+        for (var _i = 0, _a = this.children; _i < _a.length; _i++) {
+            var displayObject = _a[_i];
+            displayObject.draw(context2D);
         }
     };
-    DisplayObjectContainer.prototype.removeChild = function (child) {
-        //By 杨帆 ， 先复制出临时数组，遍历数组中子元素，找到与需要删除的名称相同的子元素并删除。
-        var tempArrlist = this.array.concat();
-        for (var _i = 0, tempArrlist_1 = tempArrlist; _i < tempArrlist_1.length; _i++) {
-            var each = tempArrlist_1[_i];
-            if (each == child) {
-                var index = this.array.indexOf(child);
-                tempArrlist.splice(index, 1);
-                this.array = tempArrlist;
-                child.remove();
-                break;
+    DisplayObjectContainer.prototype.removeChild = function (displayObject) {
+        var tempArray = this.children.concat();
+        for (var _i = 0, tempArray_1 = tempArray; _i < tempArray_1.length; _i++) {
+            var each = tempArray_1[_i];
+            if (each == displayObject) {
+                var index = this.children.indexOf(each);
+                tempArray.splice(index, 1);
+                this.children = tempArray;
+                return;
             }
         }
     };
@@ -249,7 +247,7 @@ var math;
         }
         Rectangle.prototype.isPointInRectangle = function (point) {
             var rect = this;
-            if (point.x < rect.width + rect.x && point.y < rect.height + rect.y && point.x > rect.x && point.y > rect.y) {
+            if (point.x < rect.x + rect.width && point.x > rect.x && point.y < rect.height + rect.y && point.y > rect.y) {
                 return true;
             }
             else {
