@@ -15,7 +15,7 @@ abstract class DisplayObject implements Drawable {
     remove() { };
 
     touchEnabled: boolean;
-
+    eventArray: TheEvent[] = [];
     constructor() {
 
         this.matrix = new math.Matrix();
@@ -23,7 +23,11 @@ abstract class DisplayObject implements Drawable {
 
     }
     //点击判断函数，返回值代表是否被点击。
+    addEventListener(type: string, func: Function, targetDisplayObject: DisplayObject, ifCapture: boolean) {
 
+        let e = new TheEvent(type, func, targetDisplayObject, ifCapture);
+        this.eventArray.push(e);
+    }
     draw(context2D: CanvasRenderingContext2D) {
 
 
@@ -91,6 +95,10 @@ class DisplayObjectContainer extends DisplayObject {
     }
 
     hitTest(x: number, y: number) {
+        if (this.eventArray.length != 0) {
+
+            EventManager.getInstance().targetDisplayObjcetArray.push(this);
+        }
         for (let i = this.children.length - 1; i >= 0; i--) {
             let child = this.children[i];
             let pointBaseOnChild = math.pointAppendMatrix(new math.Point(x, y), math.invertMatrix(child.matrix));
@@ -131,6 +139,11 @@ class TextField extends DisplayObject {
         rect.height = 20;
         var point = new math.Point(x, y);
         if (rect.isPointInRectangle(point)) {
+
+            if (this.eventArray.length != 0) {
+
+                EventManager.getInstance().targetDisplayObjcetArray.push(this);
+            }
             return this;
         } else {
             return null;
@@ -162,12 +175,57 @@ class Bitmap extends DisplayObject {
         rect.height = this.image.height;
         //alert("22");
         if (rect.isPointInRectangle(new math.Point(x, y))) {
+
+            if (this.eventArray.length != 0) {
+
+                EventManager.getInstance().targetDisplayObjcetArray.push(this);
+            }
             return this;
         } else {
             return null;
         }
     }
+    addEventListener(type: string, func: Function, targetDisplayObject: DisplayObject, ifCapture: boolean) {
+
+        let e = new TheEvent(type, func, targetDisplayObject, ifCapture);
+        this.eventArray.push(e);
+    }
+
 }
 
 
+class TheEvent {
 
+    type = "";
+    ifCapture = false;
+    targetDisplayObject: DisplayObject;
+    func: Function;
+
+    constructor(type: string, func: Function, targetDisplayObject: DisplayObject, ifCapture: boolean) {
+
+        this.type = type;
+        this.ifCapture = ifCapture;
+        this.func = func;
+        this.targetDisplayObject = targetDisplayObject;
+
+    }
+}
+
+class EventManager {
+
+    targetDisplayObjcetArray: DisplayObject[];
+    static eventManager: EventManager;
+
+    static getInstance() {
+        if (EventManager.eventManager == null) {
+
+            EventManager.eventManager = new EventManager();
+            EventManager.eventManager.targetDisplayObjcetArray = new Array();
+            return EventManager.eventManager;
+
+        } else {
+
+            return EventManager.eventManager;
+        }
+    }
+}

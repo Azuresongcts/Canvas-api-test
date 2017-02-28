@@ -36,37 +36,100 @@ window.onload = () => {
     bitmap.x = 50;
     bitmap.scaleX = 0.5;
     bitmap.scaleY = 0.5;
+    bitmap.addEventListener("onclick", () => {
 
+    }, this, false);
 
+    var moveList = new DisplayObjectContainer();
+    moveList.addEventListener("onmousemove", (e: MouseEvent) => {
+
+        var yChange = currentY - lastY;
+        moveList.y = moveList.y + yChange;
+
+    }, this, false);
 
 
 
     image.onload = () => {//加载图片、文字与封装API等
 
-        stage.addChild(tf1);
-        //console.log("1");
-        stage.addChild(tf2);
-        stage.addChild(bitmap);
+        stage.addChild(moveList);
+        moveList.addChild(bitmap);
+        moveList.addChild(tf1);
+        moveList.addChild(tf2);
         //stage.removeChild(tf1);
     }
 
-    canvas.onmousedown = (e) => {//down为鼠标按下，click为点击
-        let x = e.offsetX;
-        let y = e.offsetY;
-        let target = stage.hitTest(x, y);
-        let result = target;
-        //list
-        //  |-itemRenderer
-        //      |--TextField    点TextField可以拖动，点button弹出Alert不能拖动
-        //      |--Button
-        if (result) {
-            alert("1");
-            while (result.parent) {
-                let type = "mousedown";//mouseup mousemove mousemove
-                let currentTarget = result.parent;
-                let e = { type, target, currentTarget }
-                result = result.parent;
+    var currentX: number;
+    var currentY: number;
+    var lastX: number;
+    var lastY: number;
 
+    var isMouseDown = false;//检测鼠标是否按下
+    var hitResult: DisplayObject;//检测是否点到控件
+
+
+    window.onmousedown = (e) => {
+
+        isMouseDown = true;
+        let targetDisplayObjectArray = EventManager.getInstance().targetDisplayObjcetArray;
+        targetDisplayObjectArray.splice(0, targetDisplayObjectArray.length);
+        hitResult = stage.hitTest(e.offsetX, e.offsetY);
+        currentX = e.offsetX;
+        currentY = e.offsetY;
+
+    }
+
+
+    window.onmousemove = (e) => {
+
+        let targetDisplayObjcetArray = EventManager.getInstance().targetDisplayObjcetArray;
+        lastX = currentX;
+        lastY = currentY;
+        currentX = e.offsetX;
+        currentY = e.offsetY;
+
+        if (isMouseDown) {
+
+            for (let i = 0; i < targetDisplayObjcetArray.length; i++) {
+
+                for (let event of targetDisplayObjcetArray[i].eventArray) {
+
+                    if (event.type.match("onmousemove") && event.ifCapture) {
+
+                        event.func(e);
+                    }
+                }
+            }
+
+            for (let i = targetDisplayObjcetArray.length - 1; i >= 0; i--) {
+
+                for (let event of targetDisplayObjcetArray[i].eventArray) {
+
+                    if (event.type.match("onmousemove") && !event.ifCapture) {
+
+                        event.func(e);
+                    }
+                }
+            }
+        }
+    }
+
+
+    window.onmouseup = (e) => {
+
+        isMouseDown = false;
+        let targetDisplayObjcetArray = EventManager.getInstance().targetDisplayObjcetArray;
+        targetDisplayObjcetArray.splice(0, targetDisplayObjcetArray.length);
+        let newHitRusult = stage.hitTest(e.offsetX, e.offsetY)
+
+        for (let i = targetDisplayObjcetArray.length - 1; i >= 0; i--) {
+
+            for (let event of targetDisplayObjcetArray[i].eventArray) {
+
+                if (event.type.match("onclick") && newHitRusult == hitResult) {
+
+                    event.func(e);
+                }
             }
         }
     }
